@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sklearn as sk
 import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report, confusion_matrix
 
 
 def loadData():
@@ -66,8 +69,22 @@ def dataPlot(data):
 def main():
     print('Start Coding, Have fun!')
     datasets = loadData()
-    dataPlot(datasets)
+    #dataPlot(datasets)
+    for i in ["a", "b", "c"]:
 
+        input = datasets[i][["x_i1", "x_i2"]]
+        label = datasets[i]['l_i']
+
+        ###### SVM Training
+        input_train, input_test, label_train, label_test = train_test_split(input, label, test_size=0.10)
+        svclassifier = SVC(kernel='rbf')
+        svclassifier.fit(input_train, label_train)
+
+        label_pred = svclassifier.predict(input_test)
+
+        print("SVM results  for Dataset {}".format(i))
+        print(confusion_matrix(label_test, label_pred))
+        print(classification_report(label_test, label_pred))
 
 
 
