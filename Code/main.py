@@ -18,7 +18,7 @@ def loadData():
     return datasets
 
 
-def DataPlot(data):
+def dataPlot(data):
     X = []
     Y = []
     Lables = []
@@ -43,7 +43,7 @@ def DataPlot(data):
             index = index + 1
 
         fig = plt.figure()
-        
+
         x_red = []
         y_red = []
         for x, y in Classes["red"]:
@@ -66,7 +66,7 @@ def DataPlot(data):
 def main():
     print('Start Coding, Have fun!')
     datasets = loadData()
-    DataPlot(datasets)
+    dataPlot(datasets)
 
 
 
