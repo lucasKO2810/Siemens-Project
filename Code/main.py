@@ -129,9 +129,10 @@ def main():
                 #inputs, labels = data
                 inputs = torch.tensor(trainloader.dataset.list_IDs.iloc[k].astype('float32'))
                 labels = torch.tensor(trainloader.dataset.labels.iloc[k])
+                labels = torch.unsqueeze(labels, dim=0)
                 optimizer.zero_grad()
                 outputs = model(inputs)
-                loss = loss_fn(outputs, labels)
+                loss = loss_fn(outputs.float(), labels.float())
                 loss.backward()
                 optimizer.step()
 

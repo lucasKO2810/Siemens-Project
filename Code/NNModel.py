@@ -13,8 +13,6 @@ class Net(nn.Module):
         self.fl3 = nn.Linear(128, 64)
         self.output = nn.Linear(64, 1)
 
-
-
     def forward(self, x):
 
         x = self.fl1(x)
