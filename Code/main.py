@@ -91,6 +91,7 @@ def dataPlot(data):
 def main():
     print('Start Coding, Have fun!')
     datasets = loadData()
+    test_split = 0.1
     #dataPlot(datasets)
     for i in ["a", "b", "c"]:
 
@@ -98,7 +99,7 @@ def main():
         label = datasets[i]['l_i']
 
         ###### SVM Training
-        input_train, input_test, label_train, label_test = train_test_split(input, label, test_size=0.10)
+        input_train, input_test, label_train, label_test = train_test_split(input, label, test_size=test_split)
         svclassifier = SVC(kernel='rbf')
         svclassifier.fit(input_train, label_train)
 
@@ -111,24 +112,39 @@ def main():
         ######### Neural Network
         #input = torch.tensor(input.values)
         #label = torch.tensor(label)
-        trainset = Dataset(input, label)
-        trainloader = torch.utils.data.DataLoader(trainset, batch_size=4,
-                                    shuffle=True, num_workers=2)
+        set = Dataset(input, label)
 
+        train_range = list(range(0, int(len(set) - test_split*len(set))))
+
+        test_range = list(range(int(len(set) - test_split*len(set)), len(set)))
+
+        train_set = torch.utils.data.Subset(set, train_range)
+        tes_set = torch.utils.data.Subset(set, test_range)
+
+        trainloader = torch.utils.data.DataLoader(train_set, batch_size=4,
+                                                  shuffle=True, num_workers=2)
+
+        tesloader = torch.utils.data.DataLoader(tes_set, batch_size=1,
+                                                  shuffle=True, num_workers=2)
+
+
+        ##### Initialize the model
         model = NNModel.Net()
         loss_fn = torch.nn.MSELoss(reduction='sum')
         learning_rate = 1e-3
         optimizer = torch.optim.RMSprop(model.parameters(), lr=learning_rate)
 
 
+
+        ##### Train the model
         for epoch in range(0,10):
             running_loss = 0.0
             index = 0
-            for k in range(0, len(trainloader.dataset)):
+            for k in range(0, len(trainloader.dataset.dataset)):
             #for k, data in enumerate(trainloader, 0):
                 #inputs, labels = data
-                inputs = torch.tensor(trainloader.dataset.list_IDs.iloc[k].astype('float32'))
-                labels = torch.tensor(trainloader.dataset.labels.iloc[k])
+                inputs = torch.tensor(trainloader.dataset.dataset.list_IDs.iloc[k].astype('float32'))
+                labels = torch.tensor(trainloader.dataset.dataset.labels.iloc[k])
                 labels = torch.unsqueeze(labels, dim=0)
                 optimizer.zero_grad()
                 outputs = model(inputs)
@@ -144,6 +160,12 @@ def main():
             index = index + 1
 
         print('Finished Training')
+        print(" ")
+        PATH = './Model/model_{}_net.pth'.format(i)
+        torch.save(model.state_dict(), PATH)
+
+
+        ###### Test the model
 
 
 
