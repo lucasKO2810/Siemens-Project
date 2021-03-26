@@ -125,7 +125,7 @@ def main():
                                                   shuffle=True, num_workers=2)
 
         tesloader = torch.utils.data.DataLoader(tes_set, batch_size=1,
-                                                  shuffle=True, num_workers=2)
+                                                shuffle=True, num_workers=2)
 
 
         ##### Initialize the model
@@ -137,12 +137,10 @@ def main():
 
 
         ##### Train the model
-        for epoch in range(0,10):
+        for epoch in range(10):
             running_loss = 0.0
             index = 0
-            for k in range(0, len(trainloader.dataset.dataset)):
-            #for k, data in enumerate(trainloader, 0):
-                #inputs, labels = data
+            for k in range(len(trainloader.dataset.dataset)):
                 inputs = torch.tensor(trainloader.dataset.dataset.list_IDs.iloc[k].astype('float32'))
                 labels = torch.tensor(trainloader.dataset.dataset.labels.iloc[k])
                 labels = torch.unsqueeze(labels, dim=0)
@@ -154,7 +152,7 @@ def main():
 
                 if index % 2000 == 1999:  # print every 2000 mini-batches
                     print('[%d, %5d] loss: %.3f' %
-                          (epoch + 1, index + 1, running_loss / 2000))
+                          (epoch + 1, index + 1, loss))
                     running_loss = 0.0
 
             index = index + 1
