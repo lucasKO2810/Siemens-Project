@@ -1,33 +1,19 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report, confusion_matrix
-import NNModel
+
+import torch.optim as optim
 import torch
+from torch.utils.data import Dataset
+import torch.nn.functional as F
 
-class Dataset(torch.utils.data.Dataset):
-  'Characterizes a dataset for PyTorch'
-  def __init__(self, list_IDs, labels):
-        'Initialization'
-        self.labels = labels
-        self.list_IDs = list_IDs
+from utils.Dataset import NewDataset
+from NNModel import Net
 
-  def __len__(self):
-        'Denotes the total number of samples'
-        return len(self.list_IDs)
-
-  def __getitem__(self, index):
-        'Generates one sample of data'
-        # Select sample
-        ID = self.list_IDs[index]
-
-        # Load data and get label
-        X = torch.load('data/' + ID + '.pt')
-        y = self.labels[ID]
-
-        return X, y
 
 def loadData():
 
@@ -86,7 +72,29 @@ def dataPlot(data):
         fig.savefig("../Dataset/data_{}".format(i), dpi=300)
         data_num = data_num + 1
 
+def train(train_data, model, i):
+    optimizer = optim.RMSprop(model.parameters(), lr=0.01)
+    loss_fn = F.mse_loss
 
+    for epoch in range(0,10):
+        for batch, (data, target) in enumerate(train_data):
+            # data = Variable(data)
+            # target = Variable(target)
+            optimizer.zero_grad()
+
+            out = model(data)
+            loss = loss_fn(out, target)
+            loss.backward()
+            optimizer.step()
+
+            print('Train Epoch: {} [{}/{} ({:.0f}%)] \tLoss {:.6f} '.format(epoch,
+                                                                            batch * len(data), len(train_data),
+                                                                            100. * batch / len(train_data), loss.data))
+
+    PATH = './Model/model_{}_net.pth'.format(i)
+    torch.save(model.state_dict(), PATH)
+    print("Training {} Finished".format(i))
+    print(" ")
 
 def main():
     print('Start Coding, Have fun!')
@@ -110,69 +118,24 @@ def main():
         print(classification_report(label_test, label_pred))
 
         ######### Neural Network
-        #input = torch.tensor(input.values)
-        #label = torch.tensor(label)
-        set = Dataset(input, label)
 
-        train_range = list(range(0, int(len(set) - test_split*len(set))))
+        set = NewDataset('../Dataset/trainingdata_{}.xls'.format(i))
 
-        test_range = list(range(int(len(set) - test_split*len(set)), len(set)))
+        train_range = list(range(0, int(len(set) - test_split * len(set))))
+        test_range = list(range(int(len(set) - test_split * len(set)), len(set)))
 
         train_set = torch.utils.data.Subset(set, train_range)
         tes_set = torch.utils.data.Subset(set, test_range)
 
-        trainloader = torch.utils.data.DataLoader(train_set, batch_size=4,
-                                                  shuffle=True, num_workers=2)
+        train_data = torch.utils.data.DataLoader(train_set, batch_size=4,
+                                                  shuffle=True)
 
-        tesloader = torch.utils.data.DataLoader(tes_set, batch_size=1,
-                                                shuffle=True, num_workers=2)
+        tesl_data = torch.utils.data.DataLoader(tes_set, batch_size=1,
+                                                shuffle=True)
 
-
-        ##### Initialize the model
-        model = NNModel.Net()
-        loss_fn = torch.nn.MSELoss(reduction='sum')
-        learning_rate = 1e-3
-        optimizer = torch.optim.RMSprop(model.parameters(), lr=learning_rate)
-
-
-
-        ##### Train the model
-        for epoch in range(10):
-            running_loss = 0.0
-            index = 0
-            for k in range(len(trainloader.dataset.dataset)):
-                inputs = torch.tensor(trainloader.dataset.dataset.list_IDs.iloc[k].astype('float32'))
-                labels = torch.tensor(trainloader.dataset.dataset.labels.iloc[k])
-                labels = torch.unsqueeze(labels, dim=0)
-                optimizer.zero_grad()
-                outputs = model(inputs)
-                loss = loss_fn(outputs.float(), labels.float())
-                loss.backward()
-                optimizer.step()
-
-                if index % 2000 == 1999:  # print every 2000 mini-batches
-                    print('[%d, %5d] loss: %.3f' %
-                          (epoch + 1, index + 1, loss))
-                    running_loss = 0.0
-
-            index = index + 1
-
-        print('Finished Training')
-        print(" ")
-        PATH = './Model/model_{}_net.pth'.format(i)
-        torch.save(model.state_dict(), PATH)
-
-
+        model = Net()
+        train(train_data, model, i)
         ###### Test the model
-
-
-
-
-
-
-
-
-
 
 
 if __name__ =="__main__":
