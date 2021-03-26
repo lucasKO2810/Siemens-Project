@@ -12,7 +12,7 @@ from torch.utils.data import Dataset
 import torch.nn.functional as F
 
 from utils.Dataset import NewDataset
-from NNModel import Net
+from Model.NNModel import Net
 
 
 def loadData():
@@ -78,8 +78,6 @@ def train(train_data, model, i):
 
     for epoch in range(0,10):
         for batch, (data, target) in enumerate(train_data):
-            # data = Variable(data)
-            # target = Variable(target)
             optimizer.zero_grad()
 
             out = model(data)
@@ -95,6 +93,19 @@ def train(train_data, model, i):
     torch.save(model.state_dict(), PATH)
     print("Training {} Finished".format(i))
     print(" ")
+
+def test(test_data, model, i):
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for batch, (data, target) in enumerate(test_data):
+            outputs = model(data)
+            _, predicted = torch.max(outputs.data, 1)
+            total += target.size(0)
+            correct += (predicted == target).sum().item()
+
+    print('Accuracy of the network on the 10000 test images: %d %%' % (
+            100 * correct / total))
 
 def main():
     print('Start Coding, Have fun!')
@@ -130,13 +141,17 @@ def main():
         train_data = torch.utils.data.DataLoader(train_set, batch_size=4,
                                                   shuffle=True)
 
-        tesl_data = torch.utils.data.DataLoader(tes_set, batch_size=1,
+        test_data = torch.utils.data.DataLoader(tes_set, batch_size=1,
                                                 shuffle=True)
 
         model = Net()
         train(train_data, model, i)
-        ###### Test the model
 
+        ###### Test the model
+        PATH = './Model/model_{}_net.pth'.format(i)
+        trained_model = Net()
+        trained_model.load_state_dict(torch.load(PATH))
+        test(test_data, trained_model, i)
 
 if __name__ =="__main__":
     main()
