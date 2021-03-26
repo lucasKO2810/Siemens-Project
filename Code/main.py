@@ -104,8 +104,21 @@ def test(test_data, model, i):
             total += target.size(0)
             correct += (predicted == target).sum().item()
 
+    print("Test {}".format(i))
     print('Accuracy of the network on the 10000 test images: %d %%' % (
             100 * correct / total))
+
+def confidence(test_data, model, svm, i):
+    distance = []
+    for batch, (data, target) in enumerate(test_data):
+        outputs_nn = model(data)
+        nn_value = outputs_nn.item()
+        output_svm = svm.predict(data)[0]
+
+        ##### Distance
+        distance.append(abs(output_svm - nn_value))
+
+    return distance
 
 def main():
     print('Start Coding, Have fun!')
@@ -152,6 +165,19 @@ def main():
         trained_model = Net()
         trained_model.load_state_dict(torch.load(PATH))
         test(test_data, trained_model, i)
+
+
+        ####### Cofidence// Distrust
+        distrust = confidence(test_data, trained_model, svclassifier, i)
+        print(distrust)
+
+        fig_distrust = plt.figure()
+        data_number = np.linspace(0, len(distrust), num=len(distrust))
+        plt.xlabel("Sample")
+        plt.ylabel("Distrust")
+        plt.plot(data_number, distrust, '--r')
+        plt.show()
+        fig_distrust.savefig("../Distrust_Data_{}".format(i), dpi=300)
 
 if __name__ =="__main__":
     main()
