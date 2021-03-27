@@ -22,6 +22,26 @@ class Net(nn.Module):
         x = self.fl3(x)
         x = F.relu_(x)
         x = self.output(x)
-        x = F.softmax(x, dim=1)
+        x = F.sigmoid(x)
 
         return x
+
+class ConfNet(nn.Module):
+
+    def __init__(self):
+        super(ConfNet, self).__init__()
+
+        self.fl1 = nn.Linear(4, 32)
+        self.fl2 = nn.Linear(32, 16)
+        self.output = nn.Linear(16, 1)
+
+    def forward(self, x):
+        x = self.fl1(x)
+        x = F.relu_(x)
+        x = self.fl2(x)
+        x = F.relu_(x)
+        x = self.output(x)
+        x = F.sigmoid(x)
+
+        return x
+
