@@ -127,6 +127,106 @@ def confidence(test_data, model, svm, i):
     return distance
 
 
+def predction_plots(test_data, model, svm, i):
+    prediction_nn = {
+        "red": [],
+        "blue": []
+    }
+    prediction_svm = {
+        "red": [],
+        "blue": []
+    }
+    ground_trouth = {
+        "red": [],
+        "blue": []
+    }
+    for batch, (data, target) in enumerate(test_data):
+        outputs_nn = model(data)
+        nn_value = outputs_nn.item()
+        output_svm = svm.predict(data)[0]
+        x = data[0][0].item()
+        y = data[0][1].item()
+
+        if target == 1:
+            ground_trouth["red"].append([x, y])
+        else:
+            ground_trouth["blue"].append([x, y])
+
+        if nn_value >= 0.5:
+            prediction_nn["red"].append([x, y])
+        else:
+            prediction_nn["blue"].append([x, y])
+
+        if output_svm == 1:
+            prediction_svm["red"].append([x, y])
+        else:
+            prediction_svm["blue"].append([x, y])
+
+
+    #### Ground Trouth
+
+    fig_gt = plt.figure()
+    x_red = []
+    y_red = []
+    for x, y in ground_trouth["red"]:
+        x_red.append(x)
+        y_red.append(y)
+    plt.plot(x_red,y_red, 'or')
+
+    x_blue = []
+    y_blue = []
+    for x, y in ground_trouth["blue"]:
+        x_blue.append(x)
+        y_blue.append(y)
+    plt.plot(x_blue, y_blue, 'ob')
+
+
+    fig_gt.savefig("../Dataset/testdata_{}".format(i), dpi=300)
+
+    #### NN Predictions
+
+    fig_nn = plt.figure()
+    x_red_nn = []
+    y_red_nn = []
+    for x, y in prediction_nn["red"]:
+        x_red_nn.append(x)
+        y_red_nn.append(y)
+    plt.plot(x_red_nn, y_red_nn, 'or')
+
+    x_blue_nn = []
+    y_blue_nn = []
+    for x, y in prediction_nn["blue"]:
+        x_blue_nn.append(x)
+        y_blue_nn.append(y)
+    plt.plot(x_blue_nn, y_blue_nn, 'ob')
+
+
+    fig_nn.savefig("../Dataset/nn_pred_{}".format(i), dpi=300)
+
+    ### SVM Predictions
+    fig_svm = plt.figure()
+    x_red_svm = []
+    y_red_svm = []
+    for x, y in prediction_svm["red"]:
+        x_red_svm.append(x)
+        y_red_svm.append(y)
+    plt.plot(x_red_svm, y_red_svm, 'or')
+
+    x_blue_svm = []
+    y_blue_svm = []
+    for x, y in prediction_svm["blue"]:
+        x_blue_svm.append(x)
+        y_blue_svm.append(y)
+    plt.plot(x_blue_svm, y_blue_svm, 'ob')
+
+
+    fig_svm.savefig("../Dataset/svm_pred_{}".format(i), dpi=300)
+
+
+
+
+
+
 def train_svm(input_train, label_train, i):
     # ----------------------------------------------------------------------
     # Train SVM
@@ -215,8 +315,10 @@ def main(args):
         plt.xlabel("Sample")
         plt.ylabel("Distrust")
         plt.plot(data_number, distrust, '--r')
-        plt.show()
+
         fig_distrust.savefig("../Distrust_Data_{}".format(i), dpi=300)
+
+        predction_plots(test_data, model, svclassifier, i)
 
 
 def options():
