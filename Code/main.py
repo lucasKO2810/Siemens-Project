@@ -13,6 +13,7 @@ import torch.nn.functional as F
 
 from utils.Dataset import NewDataset
 from Model.NNModel import Net
+from Model.NNModel import ConfNet
 
 import pickle
 from argparse import ArgumentParser
@@ -110,9 +111,33 @@ def test_nn(test_data, model, i):
             correct += (predicted == target).sum().item()
 
     print("Test {}".format(i))
-    print('Accuracy of the network on the 10000 test images: %d %%' % (
+    print('Accuracy of the network on the test data: %d %%' % (
             100 * correct / total))
 
+
+def train_confnet(train_data, svm, pre_trained_model, confnet, i):
+    optimizer = optim.RMSprop(confnet.parameters(), lr=0.01)
+    loss_fn = F.mse_loss
+
+    for epoch in range(0, 10):
+        for batch, (data, target) in enumerate(train_data):
+            optimizer.zero_grad()
+
+            out_net = pre_trained_model(data)
+            output_svm = svm.predict(data)[0]
+            output_svm = torch.Tensor([[output_svm]])
+            all_data = torch.cat([data, out_net, output_svm], 1)
+            out = confnet(all_data)
+            loss = loss_fn(out, target)
+            loss.backward()
+            optimizer.step()
+
+            print('Train Epoch: {} [{}/{} ({:.0f}%)] \tLoss {:.6f} '.format(epoch,
+                                                                            batch * len(data), len(train_data),
+                                                                            100. * batch / len(train_data), loss.data))
+
+    PATH = './Model/model_{}_confnet.pth'.format(i)
+    torch.save(confnet.state_dict(), PATH)
 
 def confidence(test_data, model, svm, i):
     distance = []
@@ -120,8 +145,9 @@ def confidence(test_data, model, svm, i):
         outputs_nn = model(data)
         nn_value = outputs_nn.item()
         output_svm = svm.predict(data)[0]
-
+        # ----------------------------------------------------------------------
         ##### Distance
+        # ----------------------------------------------------------------------
         distance.append(abs(output_svm - nn_value))
 
     return distance
@@ -162,9 +188,9 @@ def predction_plots(test_data, model, svm, i):
         else:
             prediction_svm["blue"].append([x, y])
 
-
+    # ----------------------------------------------------------------------
     #### Ground Trouth
-
+    # ----------------------------------------------------------------------
     fig_gt = plt.figure()
     x_red = []
     y_red = []
@@ -179,12 +205,10 @@ def predction_plots(test_data, model, svm, i):
         x_blue.append(x)
         y_blue.append(y)
     plt.plot(x_blue, y_blue, 'ob')
-
-
     fig_gt.savefig("../Dataset/testdata_{}".format(i), dpi=300)
-
+    # ----------------------------------------------------------------------
     #### NN Predictions
-
+    # ----------------------------------------------------------------------
     fig_nn = plt.figure()
     x_red_nn = []
     y_red_nn = []
@@ -199,11 +223,10 @@ def predction_plots(test_data, model, svm, i):
         x_blue_nn.append(x)
         y_blue_nn.append(y)
     plt.plot(x_blue_nn, y_blue_nn, 'ob')
-
-
     fig_nn.savefig("../Dataset/nn_pred_{}".format(i), dpi=300)
-
+    # ----------------------------------------------------------------------
     ### SVM Predictions
+    # ----------------------------------------------------------------------
     fig_svm = plt.figure()
     x_red_svm = []
     y_red_svm = []
@@ -218,12 +241,7 @@ def predction_plots(test_data, model, svm, i):
         x_blue_svm.append(x)
         y_blue_svm.append(y)
     plt.plot(x_blue_svm, y_blue_svm, 'ob')
-
-
     fig_svm.savefig("../Dataset/svm_pred_{}".format(i), dpi=300)
-
-
-
 
 
 
@@ -249,6 +267,7 @@ def main(args):
     # ----------------------------------------------------------------------
     loadSVM = args.loadSVM
     loadNN = args.loadNN
+    loadConfNN = args.loadConfNN
 
     datasets = loadData()
     test_split = 0.1
@@ -321,6 +340,18 @@ def main(args):
         predction_plots(test_data, model, svclassifier, i)
 
 
+
+        if loadConfNN:
+            PATH = './Model/model_{}_confnet.pth'.format(i)
+            confnet = ConfNet()
+            model.load_state_dict(torch.load(PATH))
+            print("----- Neural Confidence Network {} succesfully loaded -----".format(i))
+        else:
+            confnet = ConfNet()
+            train_confnet(train_data, svclassifier, model, confnet, i)
+
+
+
 def options():
     parser = ArgumentParser()
     parser.add_argument('--loadSVM',
@@ -333,6 +364,12 @@ def options():
                         default=1,  # True
                         choices=[0, 1],
                         help="Load Neural Network")
+    parser.add_argument('--loadConfNN',
+                        type=int,
+                        default=1,  # True
+                        choices=[0, 1],
+                        help="Load Neural Confidence Network")
+
     return parser.parse_args()
 
 

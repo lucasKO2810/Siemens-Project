@@ -7,11 +7,11 @@ from sklearn.preprocessing import StandardScaler
 class NewDataset(Dataset):
     def __init__(self, file_name):
         file = pd.read_excel(file_name)
-        x = file.iloc[0:1001, 1:3].values
-        y = file.iloc[0:1001, 3].values
+        x = file.iloc[:, 1:-1].values
+        y = file.iloc[:, -1].values
 
         sc = StandardScaler()
-        x_train = sc.fit_transform(x)
+        x_train = x #sc.fit_transform(x)
         y_train = y
 
         self.X_train = torch.tensor(x_train, dtype=torch.float32)

@@ -22,7 +22,7 @@ class Net(nn.Module):
         x = self.fl3(x)
         x = F.relu_(x)
         x = self.output(x)
-        x = F.sigmoid(x)
+        x = torch.sigmoid(x)
 
         return x
 
@@ -41,7 +41,7 @@ class ConfNet(nn.Module):
         x = self.fl2(x)
         x = F.relu_(x)
         x = self.output(x)
-        x = F.sigmoid(x)
+        x = torch.sigmoid(x)
 
         return x
 
