@@ -106,9 +106,13 @@ def test_nn(test_data, model, i):
     with torch.no_grad():
         for batch, (data, target) in enumerate(test_data):
             outputs = model(data)
-            _, predicted = torch.max(outputs.data, 1)
+
+            predicted = 1 if outputs.data >= 0.5 else 0
             total += target.size(0)
-            correct += (predicted == target).sum().item()
+            correct += 1 if predicted == target else 0
+            #_, predicted = torch.max(outputs.data, 1)
+            #total += target.size(0)
+            #correct += (predicted == target).sum().item()
 
     print("Test {}".format(i))
     print('Accuracy of the network on the test data: %d %%' % (
