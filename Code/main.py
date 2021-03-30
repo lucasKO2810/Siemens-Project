@@ -148,7 +148,7 @@ def test_confnet(test_data, svm, pre_trained_model, confnet, i):
     plt.plot(samples, output_collection)
     plt.xlabel("Samples")
     plt.ylabel("Confidence")
-    figconf.savefig("../Dataset/Confidence_{}".format(i), dpi= 300)
+    figconf.savefig("../Results/Confidence_{}".format(i), dpi= 300)
 
 
 def train_confnet(train_data, svm, pre_trained_model, confnet, i):
@@ -241,7 +241,7 @@ def predction_plots(test_data, model, svm, i):
         x_blue.append(x)
         y_blue.append(y)
     plt.plot(x_blue, y_blue, 'ob')
-    fig_gt.savefig("../Dataset/testdata_{}".format(i), dpi=300)
+    fig_gt.savefig("../Results/testdata_{}".format(i), dpi=300)
     # ----------------------------------------------------------------------
     #### NN Predictions
     # ----------------------------------------------------------------------
@@ -259,7 +259,7 @@ def predction_plots(test_data, model, svm, i):
         x_blue_nn.append(x)
         y_blue_nn.append(y)
     plt.plot(x_blue_nn, y_blue_nn, 'ob')
-    fig_nn.savefig("../Dataset/nn_pred_{}".format(i), dpi=300)
+    fig_nn.savefig("../Results/nn_pred_{}".format(i), dpi=300)
     # ----------------------------------------------------------------------
     ### SVM Predictions
     # ----------------------------------------------------------------------
@@ -277,7 +277,7 @@ def predction_plots(test_data, model, svm, i):
         x_blue_svm.append(x)
         y_blue_svm.append(y)
     plt.plot(x_blue_svm, y_blue_svm, 'ob')
-    fig_svm.savefig("../Dataset/svm_pred_{}".format(i), dpi=300)
+    fig_svm.savefig("../Results/svm_pred_{}".format(i), dpi=300)
 
 
 
@@ -370,7 +370,7 @@ def main(args):
         plt.ylabel("Distrust")
         plt.plot(data_number, distrust, '--r')
 
-        fig_distrust.savefig("../Distrust_Data_{}".format(i), dpi=300)
+        fig_distrust.savefig("../Results/Distrust_Data_{}".format(i), dpi=300)
 
         predction_plots(test_data, model, svclassifier, i)
 
