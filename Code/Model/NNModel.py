@@ -33,7 +33,7 @@ class ConfNet(nn.Module):
 
         self.fl1 = nn.Linear(4, 32)
         self.fl2 = nn.Linear(32, 16)
-        self.output = nn.Linear(16, 1)
+        self.output = nn.Linear(16, 2)
 
     def forward(self, x):
         x = self.fl1(x)
@@ -41,7 +41,7 @@ class ConfNet(nn.Module):
         x = self.fl2(x)
         x = F.relu_(x)
         x = self.output(x)
-        x = torch.sigmoid(x)
+        x = F.softmax(x, dim=1)
 
         return x
 

@@ -77,6 +77,14 @@ def dataPlot(data):
         data_num = data_num + 1
 
 
+def create_labelvec(target):
+    labelvec = {0:0, 1:0}
+    if target == 1:
+        labelvec[0] = 1
+    else:
+        labelvec[1] = 1
+    return labelvec
+
 def train_nn(train_data, model, i):
     optimizer = optim.RMSprop(model.parameters(), lr=0.01)
     loss_fn = F.mse_loss
@@ -130,12 +138,9 @@ def test_confnet(test_data, svm, pre_trained_model, confnet, i):
             output_svm = torch.Tensor([[output_svm]])
             all_data = torch.cat([data, out_net, output_svm], 1)
             outputs = confnet(all_data)
-            if target == 1:
-                output_collection.append(outputs.data)
-            else:
-                output_collection.append(1 - outputs.data)
-
-            predicted = 1 if outputs.data >= 0.5 else 0
+            output_collection.append(max(outputs.data[0]))
+            test = outputs.data[0][0]
+            predicted = 1 if outputs.data[0][0] >= 0.5 else 0
             total += target.size(0)
             correct += 1 if predicted == target else 0
 
@@ -162,13 +167,14 @@ def train_confnet(train_data, svm, pre_trained_model, confnet, i):
     for epoch in range(0, 10):
         for batch, (data, target) in enumerate(train_data):
             optimizer.zero_grad()
-
+            label_dic = create_labelvec(target)
+            labelvec = torch.Tensor([[label_dic[0], label_dic[1]]])
             out_net = pre_trained_model(data)
             output_svm = svm.predict(data)[0]
             output_svm = torch.Tensor([[output_svm]])
             all_data = torch.cat([data, out_net, output_svm], 1)
             out = confnet(all_data)
-            loss = loss_fn(out, target)
+            loss = loss_fn(out, labelvec)
             loss.backward()
             optimizer.step()
 
