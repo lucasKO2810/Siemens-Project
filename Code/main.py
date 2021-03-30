@@ -115,6 +115,42 @@ def test_nn(test_data, model, i):
             100 * correct / total))
 
 
+def test_confnet(test_data, svm, pre_trained_model, confnet, i):
+    correct = 0
+    total = 0
+    output_collection = []
+    with torch.no_grad():
+        for batch, (data, target) in enumerate(test_data):
+            out_net = pre_trained_model(data)
+            output_svm = svm.predict(data)[0]
+            output_svm = torch.Tensor([[output_svm]])
+            all_data = torch.cat([data, out_net, output_svm], 1)
+            outputs = confnet(all_data)
+            if target == 1:
+                output_collection.append(outputs.data)
+            else:
+                output_collection.append(1 - outputs.data)
+
+            _, predicted = torch.max(outputs.data, 1)
+            total += target.size(0)
+            correct += (predicted == target).sum().item()
+
+    print("Test {}".format(i))
+    print('Accuracy of the confidence network on the test data: %d %%' % (
+            100 * correct / total))
+
+
+    # ----------------------------------------------------------------------
+    # Plot Confidence over Samples
+    # ----------------------------------------------------------------------
+    figconf = plt.figure()
+    samples = np.linspace(0, len(output_collection), len(output_collection))
+    plt.plot(samples, output_collection)
+    plt.xlabel("Samples")
+    plt.ylabel("Confidence")
+    figconf.savefig("../Dataset/Confidence_{}".format(i), dpi= 300)
+
+
 def train_confnet(train_data, svm, pre_trained_model, confnet, i):
     optimizer = optim.RMSprop(confnet.parameters(), lr=0.01)
     loss_fn = F.mse_loss
@@ -304,7 +340,7 @@ def main(args):
         train_set = torch.utils.data.Subset(set, train_range)
         tes_set = torch.utils.data.Subset(set, test_range)
 
-        train_data = torch.utils.data.DataLoader(train_set, batch_size=4,
+        train_data = torch.utils.data.DataLoader(train_set, batch_size=1,
                                                   shuffle=True)
 
         test_data = torch.utils.data.DataLoader(tes_set, batch_size=1,
@@ -328,7 +364,6 @@ def main(args):
         # Compute confidence/distrust
         # ----------------------------------------------------------------------
         distrust = confidence(test_data, model, svclassifier, i)
-        print(distrust)
         fig_distrust = plt.figure()
         data_number = np.linspace(0, len(distrust), num=len(distrust))
         plt.xlabel("Sample")
@@ -339,18 +374,22 @@ def main(args):
 
         predction_plots(test_data, model, svclassifier, i)
 
-
-
+        # ----------------------------------------------------------------------
+        # Load or train Neural Confidence Network
+        # ----------------------------------------------------------------------
         if loadConfNN:
             PATH = './Model/model_{}_confnet.pth'.format(i)
             confnet = ConfNet()
-            model.load_state_dict(torch.load(PATH))
+            confnet.load_state_dict(torch.load(PATH))
             print("----- Neural Confidence Network {} succesfully loaded -----".format(i))
         else:
             confnet = ConfNet()
             train_confnet(train_data, svclassifier, model, confnet, i)
 
-
+        # ----------------------------------------------------------------------
+        # Test Neural Confidence Network
+        # ----------------------------------------------------------------------
+        test_confnet(test_data, svclassifier, model, confnet, i)
 
 def options():
     parser = ArgumentParser()
