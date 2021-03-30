@@ -78,11 +78,11 @@ def dataPlot(data):
 
 
 def create_labelvec(target):
-    labelvec = {0:0, 1:0}
+    labelvec = {1:0, 0:0}
     if target == 1:
-        labelvec[0] = 1
-    else:
         labelvec[1] = 1
+    else:
+        labelvec[0] = 1
     return labelvec
 
 def train_nn(train_data, model, i):
@@ -168,7 +168,7 @@ def train_confnet(train_data, svm, pre_trained_model, confnet, i):
         for batch, (data, target) in enumerate(train_data):
             optimizer.zero_grad()
             label_dic = create_labelvec(target)
-            labelvec = torch.Tensor([[label_dic[0], label_dic[1]]])
+            labelvec = torch.Tensor([[label_dic[1], label_dic[0]]])
             out_net = pre_trained_model(data)
             output_svm = svm.predict(data)[0]
             output_svm = torch.Tensor([[output_svm]])
