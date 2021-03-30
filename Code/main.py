@@ -131,9 +131,9 @@ def test_confnet(test_data, svm, pre_trained_model, confnet, i):
             else:
                 output_collection.append(1 - outputs.data)
 
-            _, predicted = torch.max(outputs.data, 1)
+            predicted = 1 if outputs.data >= 0.5 else 0
             total += target.size(0)
-            correct += (predicted == target).sum().item()
+            correct += 1 if predicted == target else 0
 
     print("Test {}".format(i))
     print('Accuracy of the confidence network on the test data: %d %%' % (
