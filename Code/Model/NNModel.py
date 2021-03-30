@@ -26,6 +26,7 @@ class Net(nn.Module):
 
         return x
 
+
 class ConfNet(nn.Module):
 
     def __init__(self):
@@ -44,4 +45,3 @@ class ConfNet(nn.Module):
         x = F.softmax(x, dim=1)
 
         return x
-

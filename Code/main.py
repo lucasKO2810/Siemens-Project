@@ -20,7 +20,6 @@ from argparse import ArgumentParser
 
 
 def loadData():
-
     datasets = {
         "a": [],
         "b": [],
@@ -64,7 +63,7 @@ def dataPlot(data):
         for x, y in Classes["red"]:
             x_red.append(x)
             y_red.append(y)
-        plt.plot(x_red,y_red, 'or')
+        plt.plot(x_red, y_red, 'or')
 
         x_blue = []
         y_blue = []
@@ -78,18 +77,19 @@ def dataPlot(data):
 
 
 def create_labelvec(target):
-    labelvec = {1:0, 0:0}
+    labelvec = {1: 0, 0: 0}
     if target == 1:
         labelvec[1] = 1
     else:
         labelvec[0] = 1
     return labelvec
 
+
 def train_nn(train_data, model, i):
     optimizer = optim.RMSprop(model.parameters(), lr=0.01)
     loss_fn = F.mse_loss
 
-    for epoch in range(0,10):
+    for epoch in range(0, 10):
         for batch, (data, target) in enumerate(train_data):
             optimizer.zero_grad()
 
@@ -118,9 +118,9 @@ def test_nn(test_data, model, i):
             predicted = 1 if outputs.data >= 0.5 else 0
             total += target.size(0)
             correct += 1 if predicted == target else 0
-            #_, predicted = torch.max(outputs.data, 1)
-            #total += target.size(0)
-            #correct += (predicted == target).sum().item()
+            # _, predicted = torch.max(outputs.data, 1)
+            # total += target.size(0)
+            # correct += (predicted == target).sum().item()
 
     print("Test {}".format(i))
     print('Accuracy of the network on the test data: %d %%' % (
@@ -148,7 +148,6 @@ def test_confnet(test_data, svm, pre_trained_model, confnet, i):
     print('Accuracy of the confidence network on the test data: %d %%' % (
             100 * correct / total))
 
-
     # ----------------------------------------------------------------------
     # Plot Confidence over Samples
     # ----------------------------------------------------------------------
@@ -157,7 +156,7 @@ def test_confnet(test_data, svm, pre_trained_model, confnet, i):
     plt.plot(samples, output_collection)
     plt.xlabel("Samples")
     plt.ylabel("Confidence")
-    figconf.savefig("../Results/Confidence_{}".format(i), dpi= 300)
+    figconf.savefig("../Results/Confidence_{}".format(i), dpi=300)
 
 
 def train_confnet(train_data, svm, pre_trained_model, confnet, i):
@@ -184,6 +183,7 @@ def train_confnet(train_data, svm, pre_trained_model, confnet, i):
 
     PATH = './Model/model_{}_confnet.pth'.format(i)
     torch.save(confnet.state_dict(), PATH)
+
 
 def confidence(test_data, model, svm, i):
     distance = []
@@ -243,7 +243,7 @@ def predction_plots(test_data, model, svm, i):
     for x, y in ground_trouth["red"]:
         x_red.append(x)
         y_red.append(y)
-    plt.plot(x_red,y_red, 'or')
+    plt.plot(x_red, y_red, 'or')
 
     x_blue = []
     y_blue = []
@@ -288,7 +288,6 @@ def predction_plots(test_data, model, svm, i):
         y_blue_svm.append(y)
     plt.plot(x_blue_svm, y_blue_svm, 'ob')
     fig_svm.savefig("../Results/svm_pred_{}".format(i), dpi=300)
-
 
 
 def train_svm(input_train, label_train, i):
@@ -351,7 +350,7 @@ def main(args):
         tes_set = torch.utils.data.Subset(set, test_range)
 
         train_data = torch.utils.data.DataLoader(train_set, batch_size=1,
-                                                  shuffle=True)
+                                                 shuffle=True)
 
         test_data = torch.utils.data.DataLoader(tes_set, batch_size=1,
                                                 shuffle=True)
@@ -401,6 +400,7 @@ def main(args):
         # ----------------------------------------------------------------------
         test_confnet(test_data, svclassifier, model, confnet, i)
 
+
 def options():
     parser = ArgumentParser()
     parser.add_argument('--loadSVM',
@@ -422,5 +422,5 @@ def options():
     return parser.parse_args()
 
 
-if __name__ =="__main__":
+if __name__ == "__main__":
     main(options())
