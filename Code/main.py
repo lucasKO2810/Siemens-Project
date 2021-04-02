@@ -193,8 +193,7 @@ def test_confnet(test_data, svm, pre_trained_model, confnet, i):
 
 def train_confnet(train_data, svm, pre_trained_model, confnet, prior , i):
     optimizer = optim.Adam(confnet.parameters(), lr=0.01)
-    weigths = torch.FloatTensor([prior["red"], prior["blue"]])
-    loss_fn = nn.CrossEntropyLoss(weight=weigths, reduction='none')
+    loss_fn = nn.BCELoss(weight=torch.Tensor([prior["red"], prior["blue"]]))
 
     for epoch in range(0, 7):
         for batch, (data, target) in enumerate(train_data):
