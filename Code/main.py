@@ -5,9 +5,11 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.model_selection import GridSearchCV
 
 import torch.optim as optim
 import torch
+import torch.nn as nn
 from torch.utils.data import Dataset
 import torch.nn.functional as F
 
@@ -31,6 +33,36 @@ def loadData():
 
     return datasets
 
+def priors(data):
+    X = []
+    Y = []
+    Lables = []
+    data_num = 0
+    for i in ["a", "b", "c"]:
+        Classes = {
+            "red": [],
+            "blue": []
+        }
+
+        dataset = data[i]
+        X.append(dataset["x_i1"])
+        Y.append(dataset["x_i2"])
+        Lables.append(dataset["l_i"])
+
+        index = 0
+        for label in Lables[data_num]:
+            if label == 1:
+                Classes["red"].append([X[data_num][index], Y[data_num][index]])
+            else:
+                Classes["blue"].append([X[data_num][index], Y[data_num][index]])
+            index = index + 1
+
+        prior = {
+            "red": len(Classes["red"])/(len(Classes["red"]) + len(Classes["blue"])),
+            "blue": len(Classes["blue"])/(len(Classes["red"]) + len(Classes["blue"]))
+        }
+
+        return prior
 
 def dataPlot(data):
     X = []
@@ -85,11 +117,11 @@ def create_labelvec(target):
     return labelvec
 
 
-def train_nn(train_data, model, i):
-    optimizer = optim.RMSprop(model.parameters(), lr=0.01)
+def train_nn(train_data, model, prior , i):
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
     loss_fn = F.mse_loss
 
-    for epoch in range(0, 10):
+    for epoch in range(0, 7):
         for batch, (data, target) in enumerate(train_data):
             optimizer.zero_grad()
 
@@ -159,11 +191,12 @@ def test_confnet(test_data, svm, pre_trained_model, confnet, i):
     figconf.savefig("../Results/Confidence_{}".format(i), dpi=300)
 
 
-def train_confnet(train_data, svm, pre_trained_model, confnet, i):
-    optimizer = optim.RMSprop(confnet.parameters(), lr=0.01)
-    loss_fn = F.mse_loss
+def train_confnet(train_data, svm, pre_trained_model, confnet, prior , i):
+    optimizer = optim.Adam(confnet.parameters(), lr=0.01)
+    weigths = torch.FloatTensor([prior["red"], prior["blue"]])
+    loss_fn = nn.CrossEntropyLoss(weight=weigths, reduction='none')
 
-    for epoch in range(0, 10):
+    for epoch in range(0, 7):
         for batch, (data, target) in enumerate(train_data):
             optimizer.zero_grad()
             label_dic = create_labelvec(target)
@@ -199,7 +232,7 @@ def confidence(test_data, model, svm, i):
     return distance
 
 
-def predction_plots(test_data, model, svm, i):
+def predction_plots(test_data, model, svm, confnet, i):
     prediction_nn = {
         "red": [],
         "blue": []
@@ -212,10 +245,23 @@ def predction_plots(test_data, model, svm, i):
         "red": [],
         "blue": []
     }
+
+    prediction_confnet = {
+        "red": [],
+        "blue": []
+    }
+
     for batch, (data, target) in enumerate(test_data):
         outputs_nn = model(data)
         nn_value = outputs_nn.item()
+        label_dic = create_labelvec(target)
+        labelvec = torch.Tensor([[label_dic[1], label_dic[0]]])
         output_svm = svm.predict(data)[0]
+        output_svm = torch.Tensor([[output_svm]])
+        all_data = torch.cat([data, outputs_nn, output_svm], 1)
+        out = confnet(all_data)
+        confnet_out = max(out.data[0])
+        predicted_index_confnet = out.data[0].tolist().index(confnet_out)
         x = data[0][0].item()
         y = data[0][1].item()
 
@@ -233,6 +279,12 @@ def predction_plots(test_data, model, svm, i):
             prediction_svm["red"].append([x, y])
         else:
             prediction_svm["blue"].append([x, y])
+
+        if not predicted_index_confnet:
+            prediction_confnet["red"].append([x, y])
+        else:
+            prediction_confnet["blue"].append([x, y])
+
 
     # ----------------------------------------------------------------------
     #### Ground Trouth
@@ -288,21 +340,40 @@ def predction_plots(test_data, model, svm, i):
         y_blue_svm.append(y)
     plt.plot(x_blue_svm, y_blue_svm, 'ob')
     fig_svm.savefig("../Results/svm_pred_{}".format(i), dpi=300)
+    # ----------------------------------------------------------------------
+    ### ConfNet Predictions
+    # ----------------------------------------------------------------------
+    fig_confnet = plt.figure()
+    x_red_confnet = []
+    y_red_confnet = []
+    for x, y in prediction_confnet["red"]:
+        x_red_confnet.append(x)
+        y_red_confnet.append(y)
+    plt.plot(x_red_confnet, y_red_confnet, 'or')
+
+    x_blue_confnet = []
+    y_blue_confnet = []
+    for x, y in prediction_confnet["blue"]:
+        x_blue_confnet.append(x)
+        y_blue_confnet.append(y)
+    plt.plot(x_blue_confnet, y_blue_confnet, 'ob')
+    fig_confnet.savefig("../Results/confnet_pred_{}".format(i), dpi=300)
 
 
 def train_svm(input_train, label_train, i):
     # ----------------------------------------------------------------------
     # Train SVM
     # ----------------------------------------------------------------------
-    svclassifier = SVC(kernel='rbf')
-    svclassifier.fit(input_train, label_train)
+    grid_param = {'C': [0.1, 1, 10], 'gamma': [1, 0.1, 0.01, 0.001], 'kernel': ['rbf']}
+    grid = GridSearchCV(SVC(), grid_param, verbose=3)
+    grid.fit(input_train, label_train)
     # ----------------------------------------------------------------------
     # Save SVM
     # ----------------------------------------------------------------------
     filename = './Model/svm_model_{}.sav'.format(i)
-    pickle.dump(svclassifier, open(filename, 'wb'))
+    pickle.dump(grid, open(filename, 'wb'))
 
-    return svclassifier
+    return grid
 
 
 def main(args):
@@ -316,6 +387,11 @@ def main(args):
 
     datasets = loadData()
     test_split = 0.1
+    # ----------------------------------------------------------------------
+    # Get Prios of Data
+    # ----------------------------------------------------------------------
+    prior = priors(datasets)
+
     for i in ["a", "b", "c"]:
         # ----------------------------------------------------------------------
         # Get inputs and targets & split data
@@ -364,7 +440,7 @@ def main(args):
             print("----- Neural Network {} succesfully loaded -----".format(i))
         else:
             model = Net()
-            train_nn(train_data, model, i)
+            train_nn(train_data, model, prior ,i)
         # ----------------------------------------------------------------------
         # Test Neural Network
         # ----------------------------------------------------------------------
@@ -381,8 +457,6 @@ def main(args):
 
         fig_distrust.savefig("../Results/Distrust_Data_{}".format(i), dpi=300)
 
-        predction_plots(test_data, model, svclassifier, i)
-
         # ----------------------------------------------------------------------
         # Load or train Neural Confidence Network
         # ----------------------------------------------------------------------
@@ -393,12 +467,17 @@ def main(args):
             print("----- Neural Confidence Network {} succesfully loaded -----".format(i))
         else:
             confnet = ConfNet()
-            train_confnet(train_data, svclassifier, model, confnet, i)
+            train_confnet(train_data, svclassifier, model, confnet, prior , i)
 
         # ----------------------------------------------------------------------
         # Test Neural Confidence Network
         # ----------------------------------------------------------------------
         test_confnet(test_data, svclassifier, model, confnet, i)
+
+        # ----------------------------------------------------------------------
+        # Make Plots for all Predictions on Testdata
+        # ----------------------------------------------------------------------
+        predction_plots(test_data, model, svclassifier, confnet, i)
 
 
 def options():
@@ -415,7 +494,7 @@ def options():
                         help="Load Neural Network")
     parser.add_argument('--loadConfNN',
                         type=int,
-                        default=1,  # True
+                        default=0,  # True
                         choices=[0, 1],
                         help="Load Neural Confidence Network")
 

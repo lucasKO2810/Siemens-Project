@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.model_selection import GridSearchCV
 
 import torch.optim as optim
 import torch
@@ -73,15 +74,16 @@ def train_svm(input_train, label_train, i):
     # ----------------------------------------------------------------------
     # Train SVM
     # ----------------------------------------------------------------------
-    svclassifier = SVC(kernel='rbf')
-    svclassifier.fit(input_train, label_train)
+    grid_param = {'C': [0.1, 1, 10], 'gamma': [1, 0.1, 0.01, 0.001], 'kernel': ['rbf']}
+    grid = GridSearchCV(SVC(), grid_param, verbose=3)
+    grid.fit(input_train, label_train)
     # ----------------------------------------------------------------------
     # Save SVM
     # ----------------------------------------------------------------------
     filename = './Model/svm_model_{}.sav'.format(i)
-    pickle.dump(svclassifier, open(filename, 'wb'))
+    pickle.dump(grid, open(filename, 'wb'))
 
-    return svclassifier
+    return grid
 
 
 def main():
