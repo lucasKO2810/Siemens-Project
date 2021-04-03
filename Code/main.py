@@ -20,6 +20,8 @@ from Model.NNModel import ConfNet
 import pickle
 from argparse import ArgumentParser
 
+from losses import WeightedCrossEntropy as WCELoss
+
 
 def loadData():
     datasets = {
@@ -193,7 +195,9 @@ def test_confnet(test_data, svm, pre_trained_model, confnet, i):
 
 def train_confnet(train_data, svm, pre_trained_model, confnet, prior , i):
     optimizer = optim.Adam(confnet.parameters(), lr=0.01)
-    loss_fn = nn.BCELoss(weight=torch.Tensor([prior["red"], prior["blue"]]))
+    weights = torch.Tensor([prior["red"], prior["blue"]])
+    # loss_fn = nn.BCELoss(weight=weights)
+    loss_fn = WCELoss(weight=weights)
 
     for epoch in range(0, 7):
         for batch, (data, target) in enumerate(train_data):
